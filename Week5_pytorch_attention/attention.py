@@ -2,7 +2,6 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-# 1. The PyTorch Transition 
 class PyTorchMLP(nn.Module):
     def __init__(self, input_dim, hidden_dim):
         super().__init__()
@@ -15,7 +14,6 @@ class PyTorchMLP(nn.Module):
         x = F.relu(self.layer2(x))
         return torch.sigmoid(self.output(x))
 
-# 2. Self-Attention
 class CausalSelfAttentionHead(nn.Module):
     def __init__(self, n_embd, head_size, max_seq_len=1024):
         super().__init__()
@@ -27,25 +25,22 @@ class CausalSelfAttentionHead(nn.Module):
 
     def forward(self, x):
         B, T, C = x.shape
-        
-        # 1. Generate Queries, Keys, and Values
         q = self.query(x) 
         k = self.key(x)  
         v = self.value(x) 
-        
-        # 2. Compute Attention Affinities 
+
         wei = q @ k.transpose(-2, -1) 
         
-        # 3. Scale by the square root of the head dimension to stabilize Softmax gradients
+        #  Scale by the square root of the head dimension
         wei = wei * (k.shape[-1] ** -0.5)
         
-        # 4. Apply Causal Mask 
+        #  Apply Causal Mask 
         wei = wei.masked_fill(self.tril[:T, :T] == 0, float('-inf'))
         
-        # 5. Softmax to convert affinities into a clean probability distribution
+        #  Softmax to convert affinities into a clean probability distribution
         wei = F.softmax(wei, dim=-1) 
         
-        # 6. Aggregate the Values based on the attention distribution
+        #  Aggregate the Values based on the attention distribution
         out = wei @ v 
         
         return out, wei
